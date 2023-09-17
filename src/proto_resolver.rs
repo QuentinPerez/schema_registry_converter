@@ -65,6 +65,7 @@ struct ResolverHelper {
 }
 
 #[derive(Logos, Debug, PartialEq)]
+#[logos(skip r"[\s]+")]
 enum Token {
     #[regex(r"package\s+[a-zA-z0-9\\.\\_]+;")]
     Package,
@@ -83,10 +84,6 @@ enum Token {
 
     #[regex(r"\S")]
     Ignorable,
-
-    #[error]
-    #[regex(r"[\s]+", logos::skip)]
-    Error,
 }
 
 impl ResolverHelper {
@@ -98,10 +95,10 @@ impl ResolverHelper {
         let mut imports: Vec<String> = Vec::new();
 
         let mut lex = Token::lexer(s);
-        let mut next: Option<Token> = lex.next();
+        let mut next = lex.next();
 
-        while next != None {
-            match next.unwrap() {
+        while let Some(Ok(value)) = next {
+            match value {
                 Token::Package => {
                     let slice = lex.slice();
                     package = Some(String::from(slice[8..slice.len() - 1].trim()));
@@ -110,7 +107,7 @@ impl ResolverHelper {
                     let slice = lex.slice();
                     let message = String::from(slice[8..slice.len()].trim());
                     for i in &indexes {
-                        if same_vec(i, &*index) {
+                        if same_vec(i, &index) {
                             *index.last_mut().unwrap() += 1;
                         }
                     }
